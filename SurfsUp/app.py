@@ -1,6 +1,7 @@
 # Import the dependencies.
 from flask import Flask, jsonify
 import numpy as np
+import datetime as dt
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
@@ -10,7 +11,7 @@ from sqlalchemy import create_engine, func
 #################################################
 
 # Create an engine for the sqlite database
-engine = create_engine("sqlite:///Resources/hawaii.sqlite")
+engine = create_engine("sqlite:///../Resources/hawaii.sqlite")
 
 # reflect an existing database into a new model
 Base = automap_base()
@@ -30,6 +31,7 @@ app = Flask(__name__)
 #################################################
 # Flask Routes
 #################################################
+#-----------------------------------------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------------------------------
 # Define what to do when a user hits the index route = "/"
 @app.route("/")
@@ -59,18 +61,23 @@ def precip():
     session = Session(engine)
 
     """Return a list of all precipitation values for the last 12 months of data"""
+    
+    # Establish most recent date from the dataset and then calculate date 12 months (i.e. 365 days) prior
+    most_recent_date = session.query(Measurement.date).order_by(Measurement.date.desc()).first().date
+    # Calculate the date one year from the last date in data set.
+    recent_date = dt.datetime.strptime(most_recent_date, "%Y-%m-%d").date()
+    one_year_ago = recent_date - dt.timedelta(days=365)
+
     # Query last twelve months of data
     results = session.query(Measurement.date, Measurement.prcp).\
-                      filter(Measurement.date >= '2016-08-23').\
-                      filter(Measurement.station == 'USC00519281').\
+                      filter(Measurement.date >= one_year_ago).\
                       order_by(Measurement.date).\
                       all()
 
     session.close()
 
-    # Convert list of tuples into normal list
+    # Convert list of tuples into normal list and output JSON list
     twelve_mos = dict(results)
-
     return jsonify(twelve_mos)
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -81,22 +88,18 @@ def stations():
     # Create our session (link) from Python to the DB
     session = Session(engine)
     
-    """Return a list of stations from the dataset"""  
+    """Return a JSON list of stations from the dataset"""  
     
-    # Return a JSON list of stations from the dataset
+    # Return a JSON list of stations from the dataset (only including Station ID and Station Name)
     results = session.query(Stations.station,
-                            Stations.name,
-                            Stations.latitude,
-                            Stations.longitude,
-                            Stations.elevation).\
+                            Stations.name).\
                       all()
 
     session.close()
 
-    # Convert list of tuples into normal list
+    # Convert list of tuples into normal list and output JSON list
     all_stations = list(np.ravel(results))
-
-    return(all_stations)
+    return jsonify(all_stations)
     
 #-----------------------------------------------------------------------------------------------------------------------
 # Define what to do when a user hits the index route = "/api/v1.0/tobs"
@@ -106,19 +109,34 @@ def temps():
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
-    """Return a list of all temperatures from the dataset"""
+    """Return a JSON list of all temperature observations of the most-active station for the previous year from the dataset"""
+
+    # Establish most recent date from the dataset and then calculate date 12 months (i.e. 365 days) prior
+    most_recent_date = session.query(Measurement.date).order_by(Measurement.date.desc()).first().date
+        # Calculate the date one year from the last date in data set.
+    recent_date = dt.datetime.strptime(most_recent_date, "%Y-%m-%d").date()
+    one_year_ago = recent_date - dt.timedelta(days=365)
+
+    # Establish the most active station by first creating a list of all stations and their counts in descending order
+        # and then locating the most active station in the list
+    active_stations = session.query(Measurement.station, 
+                                    func.count(Measurement.station)).\
+                              group_by(Measurement.station).\
+                              order_by(func.count(Measurement.station).desc()).\
+                              all()
+    most_active_station = active_stations[0][0]
+
     # Query last twelve months of data for most active station
     results = session.query(Measurement.tobs).\
-                      filter(Measurement.date >= '2016-08-23').\
-                      filter(Measurement.station == 'USC00519281').\
+                      filter(Measurement.date >= one_year_ago).\
+                      filter(Measurement.station == most_active_station).\
                       order_by(Measurement.date).\
                       all()
 
     session.close()
 
-    # Convert list of tuples into normal list
+    # Convert list of tuples into normal list and output JSON list
     twelve_mos_temps = list(np.ravel(results))
-
     return jsonify(twelve_mos_temps)
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -135,6 +153,7 @@ def startdate():
             f"Address example for <i>start-date</i>:<br/>"
             f"/api/v1.0/<i>2016-08-23</i> for August 23, 2016<br/>")
 
+#-----------------------------------------------------------------------------------------------------------------------
  # Define what to do when a user hits the index route = "/api/v1.0/start-date/end-date"
 @app.route("/api/v1.0/start-date/end-date")
 def startenddate():
@@ -151,70 +170,71 @@ def startenddate():
 #-----------------------------------------------------------------------------------------------------------------------
 # Define what to do when a user hits the index route = "/api/v1.0/<start>"
 @app.route("/api/v1.0/<start>")
-def startpage(start):
+def start_page(start):
     """Fetch minimum, average, and maximum temperatures for a specified start date in
-       the path variable supplied by the user, or a 404 if not."""
+       the path variable supplied by the user."""
     
-# Create our session (link) from Python to the DB
+    # Create our session (link) from Python to the DB
     session = Session(engine)
     
-# Create query session to calculate temp-min, temp-max, temp-average for a user-input start date
-    TMIN = session.query(func.min(Measurement.tobs)).\
+    # Create query session to calculate temp-min, temp-max, temp-average for a user-input start date
+    tmin = session.query(func.min(Measurement.tobs)).\
                    filter(Measurement.date >= start).\
                    all()
     
-    TMAX = session.query(func.max(Measurement.tobs)).\
+    tmax = session.query(func.max(Measurement.tobs)).\
                    filter(Measurement.date >= start).\
                    all()
     
-    TAVG = session.query(func.avg(Measurement.tobs)).\
+    tavg = session.query(func.avg(Measurement.tobs)).\
                    filter(Measurement.date >= start).\
                    all()
 
-# Close our session (link) from Python to the DB    
+    # Close our session (link) from Python to the DB    
     session.close()
 
- # Return JSON list of temp-min, temp-max, temp-average
-    min_max_avg = list(np.ravel([TMIN, TMAX, TAVG]))
-    return(min_max_avg)
+    # Return JSON list of temp-min, temp-max, temp-average
+    min_max_avg = list(np.ravel([tmin, tmax, tavg]))
+    return jsonify(min_max_avg)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Define what to do when a user hits the index route = "/api/v1.0/<start>/<end>"
 @app.route("/api/v1.0/<start>/<end>")
-def start_endpage(start, end):
+def start_end_page(start, end):
     """Fetch minimum, average, and maximum temperatures for a specified start-date/end-date range
        in the path variable supplied by the user."""
     
-# Create our session (link) from Python to the DB
+    # Create our session (link) from Python to the DB
     session = Session(engine)
     
-# Create query session to calculate temp-min, temp-max, temp-average for a user-input start-date/end-date
-    TMIN = session.query(func.min(Measurement.tobs)).\
+    # Create query session to calculate temp-min, temp-max, temp-average for a user-input start-date/end-date
+    tmin = session.query(func.min(Measurement.tobs)).\
                    filter(Measurement.date >= start).\
                    filter(Measurement.date <= end).\
                    all()
-
     
-    TMAX = session.query(func.max(Measurement.tobs)).\
+    tmax = session.query(func.max(Measurement.tobs)).\
                    filter(Measurement.date >= start).\
                    filter(Measurement.date <= end).\
                    all()
-
     
-    TAVG = session.query(func.avg(Measurement.tobs)).\
+    tavg = session.query(func.avg(Measurement.tobs)).\
                    filter(Measurement.date >= start).\
                    filter(Measurement.date <= end).\
                    all()
 
-# Close our session (link) from Python to the DB    
+    # Close our session (link) from Python to the DB    
     session.close()
 
- # Return JSON list of temp-min, temp-max, temp-average
-    min_max_avg = list(np.ravel([TMIN, TMAX, TAVG]))
-    return(min_max_avg)
+    # Return JSON list of temp-min, temp-max, temp-average
+    min_max_avg = list(np.ravel([tmin, tmax, tavg]))
+    return jsonify(min_max_avg)
 
 #-----------------------------------------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------------------------------------------
-# Debugger toggle for terminal set to true/on
+
+# Debugger toggle for terminal output set to true/on
 if __name__ == "__main__":
     app.run(debug=True)
+
+#-----------------------------------------------------------------------------------------------------------------------
