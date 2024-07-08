@@ -2,11 +2,11 @@
 
 
 
-#### Python App Script location:
-[https://github.com/acdlc4/sqlalchemy-challenge/blob/main/app.py](https://github.com/acdlc4/sqlalchemy-challenge/blob/main/SurfsUp/app.py)
+#### Flask-Python App Script location:
+https://github.com/acdlc4/sqlalchemy-challenge/blob/main/SurfsUp/app.py
 
 #### Jupyter Notebook location:
-[https://github.com/acdlc4/sqlalchemy-challenge/blob/main/climate_starter.ipynb](https://github.com/acdlc4/sqlalchemy-challenge/blob/main/SurfsUp/climate_starter.ipynb)
+https://github.com/acdlc4/sqlalchemy-challenge/blob/main/SurfsUp/climate_starter.ipynb
 
 
 Any questions?
