@@ -49,8 +49,8 @@ def home():
             f"<br/>"
 
             f"<u>Examples for <i>start-date</i> and <i>start-date/end-date</i></u>:<br/>"
-            f"/api/v1.0/<i>2016-08-23</i> <small>for August 23, 2016</small><br/>"
-            f"/api/v1.0/<i>2016-08-23</i>/<i>2017-01-05</i> <small>for the date range from August 23, 2016 through January 5, 2017</small><br/>"
+            f"/api/v1.0/<i>2016-08-23</i> <small>(for August 23, 2016)</small><br/>"
+            f"/api/v1.0/<i>2016-08-23</i>/<i>2017-01-05</i> <small>(for the date range from August 23, 2016 through January 5, 2017)</small><br/>"
            )
 
 #-----------------------------------------------------------------------------------------------------------------------
