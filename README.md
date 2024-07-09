@@ -12,9 +12,15 @@ Additionally, the jupyter notebook helps us figure out the location that is the 
 
 ![Temperature histogram for USC00519281](https://github.com/acdlc4/sqlalchemy-challenge/blob/main/SurfsUp/image_output/Last_12_Mos_USC00519281.png)
 
+The API provides a user a means of further analysis, with routes that output more explicit data based on:
+- Precipitation measures by date
+- A list of all stations providing data
+- Final year of temperature observations of the most-active station
+- Dynamic pages that provide lowest temperature, highest temperature, and average temperature provided with a start date or a start/end date range
+
 Here's to hoping this helps in your (and also my) next trip to Hawaii!!
 
-#### Flask-Python App Script location:
+#### Flask-Python API Script location:
 https://github.com/acdlc4/sqlalchemy-challenge/blob/main/SurfsUp/app.py
 
 #### Jupyter Notebook location:
